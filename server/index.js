@@ -41,6 +41,8 @@ const limiter = rateLimit({
 
 app.use(limiter); // 👈 Apply rate limiter
 
+app.use(express.json()); // 👈 Add this line to parse JSON bodies
+
 // Your existing routes
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
