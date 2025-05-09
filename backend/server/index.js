@@ -2,17 +2,46 @@ import express from 'express';
 import axios from 'axios';
 import cors from 'cors';
 import { config } from 'dotenv';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet'; // 👈 Import helmet
 
 config();
 
 const app = express();
+
+// Apply security headers
+app.use(helmet()); // 👈 Use helmet before routes
+
+// CORS setup
+const allowedOrigins = [
+  'http://localhost:5173', 
+  'https://chatbot-flame-three.vercel.app'
+];
+
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
   credentials: true
 }));
-app.use(express.json());
 
+// Rate limiting setup (applies to all routes)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter); // 👈 Apply rate limiter
+
+// Your existing routes
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 app.post('/chat', async (req, res) => {
@@ -76,4 +105,4 @@ app.post('/summarize', async (req, res) => {
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); 
+});
